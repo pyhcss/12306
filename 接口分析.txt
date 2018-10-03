@@ -1,0 +1,59 @@
+
+1 验证码参数分析 顺序如图
+1==(30-40,40-50)   3==(107-115,40-50)　 5==(180-185,40-50) 　7==(248-260,40-50)
+2==(30-40,110-120) 4==(107-115,110-120) 6==(180-185,110-120) 8==(248-260,110-120)
+
+2 获取验证码   GET请求
+https://kyfw.12306.cn/passport/captcha/captcha-image?+参数
+服务器设置set-cookie:_passport_ct=服务器值                 # 校验验证码必须项
+参数  url参数
+    login_site=E                                        # 固定值
+    module=login                                        # 固定值
+    rand=sjrand                                         # 固定值
+    0.74027243129944                                    # 随机值
+返回值:
+    验证码图片
+
+3 验证码校验   POST请求
+https://kyfw.12306.cn/passport/captcha/captcha-check
+带上Cookie:_passport_ct=服务器值                          # 校验验证码必须项
+参数  表单参数 urllib.urlencode
+    answer=:267,42,255,115                               # 验证码值 已说明
+    login_site=E                                        # 固定值
+    rand=sjrand                                         # 固定值
+返回值
+    {"result_message":"验证码校验成功","result_code":"4"}
+
+4 获取uamtk   POST请求
+https://kyfw.12306.cn/passport/web/login
+带上Cookie：_passport_ct=服务器值                         # 校验验证码必须项
+参数  表单参数 urllib.urlencode
+    username=tel                                        # 账户名
+    password=pwd                                        # 密码
+    appid=otn                                           # 固定值
+返回值
+    服务器设置Cookie:uamtk=uamtk返回值                     # 下一步校验必须项
+    {"result_message":"登录成功","result_code":0,"uamtk":"服务器值"}
+
+# 被重定向到下一请求 可不请求 留档
+# https://kyfw.12306.cn/otn/login/userLogin 　 POST　 参数  _json_att=
+# 登录成功的html模板页面 无个人信息 先不请求 留档
+# https://kyfw.12306.cn/otn/passport?redirect=/otn/login/userLogin  GET
+
+5 获取newapptk    POST请求
+https://kyfw.12306.cn/passport/web/auth/uamtk
+参数  表单参数 urllib.urlencode
+    appid=otn                                           # 固定值
+返回值
+    {"result_message":"验证通过","result_code":0,"apptk":null,"newapptk":"服务器值"}
+
+6 最后一步验证    POST请求
+https://kyfw.12306.cn/otn/uamauthclient
+参数  表单参数 urllib.urlencode
+    tk=newapptk                                         # 上一步值
+返回值
+    服务器设置Cookie: tk=apptk的值                        # 下一步必须项
+    {"apptk":"服务器值","result_code":0,"result_message":"验证通过","username":"***"}
+
+7 获取页面      GET请求
+https://kyfw.12306.cn/otn/index/initMy12306				# 最后请求 拿到页面 含个人信息

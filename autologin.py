@@ -9,6 +9,7 @@ import cookielib
 USERNAME = ""                                               # 账号
 PASSWORD = ""                                               # 密码
 
+
 class AutoLogin(object):
     """12306自动登录模块"""
 

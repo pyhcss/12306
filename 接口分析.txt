@@ -57,3 +57,32 @@ https://kyfw.12306.cn/otn/uamauthclient
 
 7 获取页面      GET请求
 https://kyfw.12306.cn/otn/index/initMy12306				# 最后请求 拿到页面 含个人信息
+
+8 余票查询      GET请求
+https://kyfw.12306.cn/otn/leftTicket/queryA?
+参数  url参数
+    leftTicketDTO.train_date:2018-10-06                 # 出发日期
+    leftTicketDTO.from_station:TJP                      # 出发站代号
+    leftTicketDTO.to_station:BJP                        # 到达站代号
+    purpose_codes:ADULT                                 # 固定值
+返回值 json
+    {"data":{
+        "flag":"1",                                     # 暂不清楚
+        "map":{                                         # 映射值
+            "BXP":"北京西",
+            "GGQ":"广州东",
+            "GZQ":"广州",
+            "IZQ":"广州南"
+              },
+        "result":[                                      # 返回数据 列表类型
+            "OjP...%3D(长串校验码应该是预定用的)|预订|330000K5980Z(列车编号)|K599(列车代号)|
+            BTC(车站编号作用不清楚)|GZQ(车站编号作用不清楚)|BXP(出发站)|GZQ(到达站)|
+            05:14(出发时间)|11:12(到达时间)|29:58(历时分钟)|Y(暂不清楚)|IH3...%3D(查看停靠信息用的长码)|
+            20181003(到达日期)|3(不清楚)|C1(不清楚)|11(出发站在本车次中的编号)|34(到达站在本车次中的编号)|
+            0(0次日到达1当日到达)|0(不清楚)||||无|||有||无|无|||||
+            10401030|1413|0",
+                 ]
+            },
+    "httpstatus":200,
+    "messages":"",
+    "status":true}

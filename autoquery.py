@@ -2,10 +2,9 @@
 
 import json
 import time
-import pymysql
-import datetime
 import urllib
-import urllib2
+import datetime
+from global_func import global_opener,global_db
 
 import sys                                                  # 解决ascii问题
 reload(sys)
@@ -17,13 +16,10 @@ class AutoQuery(object):
 
     def __init__(self):
         """初始化方法"""
-        self.headers = {"User-Agent":"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36 OPR/26.0.1656.60"}
-        self.db_client = pymysql.Connection(host="127.0.0.1", database="kyfw_12306", user="root", password="",charset="utf8")
-        self.cursor = self.db_client.cursor()               # 创建数据库链接及游标
         self.data = None                                    # 初始化查询数据
 
     def input_text(self):
-        """获取出发信息"""                                    # 获取出发日期
+        """获取出发信息"""
         date = raw_input("请输入出发日期(例20181001):").replace(" ", "")
                                                             # 格式化出发日期
         date = time.strftime("%Y-%m-%d",time.strptime(date,"%Y%m%d"))
@@ -35,10 +31,8 @@ class AutoQuery(object):
             start = raw_input("请输入出发站(例北京):").replace(" ", "").replace("站", "")
             end = raw_input("请输入目的站(例天津):").replace(" ", "").replace("站", "")
             try:                                            # 从数据库获取标准码
-                self.cursor.execute("select name_code from station where name=%s",(start))
-                start = self.cursor.fetchone()              # 拿到数据库数据
-                self.cursor.execute("select name_code from station where name=%s",(end))
-                end = self.cursor.fetchone()
+                start = global_db.query("select name_code from station where name=%s",(start))
+                end = global_db.query("select name_code from station where name=%s",(end))
                 self.data = [                               # 格式化查询信息
                     {"leftTicketDTO.train_date":date},      # 出发日期
                     {"leftTicketDTO.from_station":start[0]},# 出发站代号
@@ -54,8 +48,8 @@ class AutoQuery(object):
         url = "https://kyfw.12306.cn/otn/leftTicket/queryA?"# 构造url
         data_list = [urllib.urlencode(i) for i in self.data]
         url += "&".join(data_list)                          # 拼接url
-        request = urllib2.Request(url,headers=self.headers) # 构造request对象
-        response = urllib2.urlopen(request).read()          # 发送请求 获取返回值
+        request = global_opener.request(url)                # 构造request对象
+        response = global_opener.opener(request).read()     # 发送请求 获取返回值
         try:
             data = json.loads(response)                     # 解析json对象
         except Exception as e:
@@ -90,15 +84,10 @@ class AutoQuery(object):
                 time.sleep(10)
                 self.get_info()
 
-    def close(self):
-        """关闭数据库链接"""
-        self.cursor.close()
-        self.db_client.close()
-
     def main(self):
         """调度函数"""
         self.input_text()
-        self.close()
+        global_db.close()
         self.get_info()
 
 

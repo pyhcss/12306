@@ -1,6 +1,7 @@
 # coding=utf-8
 
 import pymysql
+from global_data import GLOBAL_DB
 
 
 class NameToMysql(object):
@@ -8,7 +9,7 @@ class NameToMysql(object):
 
     def __init__(self):
         """初始化方法"""
-        self.db_client = pymysql.Connection(host="127.0.0.1",database="kyfw_12306",user="root",password="",charset="utf8",)
+        self.db_client = pymysql.Connection(**GLOBAL_DB)
         self.cursor = self.db_client.cursor()
 
     def name_mysql(self):

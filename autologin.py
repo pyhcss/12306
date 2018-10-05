@@ -2,12 +2,9 @@
 
 import json
 import urllib
-import urllib2
 import random
-import cookielib
-
-USERNAME = ""                                               # 账号
-PASSWORD = ""                                               # 密码
+from global_data import *
+from global_func import global_opener
 
 
 class AutoLogin(object):
@@ -15,19 +12,13 @@ class AutoLogin(object):
 
     def __init__(self):
         """初始化方法"""
-        cookie = cookielib.CookieJar()                      # 构建cookiejar对象 用来保存cookie对象
-        cookie_handler = urllib2.HTTPCookieProcessor(cookie)# 构建自定义cookie处理器对象 用来处理cookie
-        self.opener = urllib2.build_opener(cookie_handler)  # 构建opener对象 用来发送请求
-        self.headers = {"User-Agent":"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36 OPR/26.0.1656.60"}
-        # urllib2.install_opener(opener)                      # 设置自定义opener为全局 之后可直接使用urllib2.urlopen
         self.newapptk = None
 
     def get_captcha(self):
         """获取验证码图片保存到本地"""
         url = "https://kyfw.12306.cn/passport/captcha/captcha-image?login_site=E&module=login&rand=sjrand&"
         url += str(random.random())                         # 添加自定义随机数
-        request = urllib2.Request(url,headers=self.headers) # 创建自定义报头信息
-        image_data = self.opener.open(request).read()       # 发送请求获取内容
+        image_data = global_opener.open(url).read()         # 发送请求获取内容
         with open("./12306.jpg","w") as f:                  # 写入到本地文件
             f.write(image_data)
 
@@ -72,9 +63,8 @@ class AutoLogin(object):
             "answer":text,                                  # 验证码值
             "login_site":"E",                               # 固定值
             "rand":"sjrand"                                 # 固定值
-        }                                                   # 创建自定义请求对象
-        request = urllib2.Request(url,data=urllib.urlencode(data),headers=self.headers)
-        data_json = self.opener.open(request).read()        # 发送请求 获取json数据
+        }                                                   # 发送请求 获取json数据
+        data_json = global_opener.open(url,data=urllib.urlencode(data)).read()
         data = json.loads(data_json)                        # 解析json数据
         if data["result_code"] == "4":                      # 如果返回值为4
             print "验证码校验成功"                            # 校验成功
@@ -87,12 +77,11 @@ class AutoLogin(object):
         """发送账号密码请求"""
         url = "https://kyfw.12306.cn/passport/web/login"
         data = {                                            # 创建数据内容
-            "username":USERNAME,                            # 账户名
-            "password":PASSWORD,                            # 密码
+            "username":GLOBAL_USERNAME,                     # 账户名
+            "password":GLOBAL_PASSWORD,                     # 密码
             "appid": "otn"                                  # 固定值
-        }                                                   # 创建自定义请求对象
-        request = urllib2.Request(url,data=urllib.urlencode(data),headers=self.headers)
-        data_json = self.opener.open(request).read()        # 发送请求 获取json数据
+        }                                                   # 发送请求 获取json数据
+        data_json = global_opener.open(url,data=urllib.urlencode(data)).read()
         data = json.loads(data_json)                        # 解析json数据
         if data["result_code"] == 0:                        # 如果返回值为0
             print "账号密码校验成功"                          # 校验成功
@@ -104,9 +93,8 @@ class AutoLogin(object):
     def get_newapptk(self):
         """获取newapptk"""
         url = "https://kyfw.12306.cn/passport/web/auth/uamtk"
-        data = {"appid":"otn"}                              # 固定参数
-        request = urllib2.Request(url,data=urllib.urlencode(data),headers=self.headers)
-        data_json = self.opener.open(request).read()        # 发送请求 获取json数据
+        data = {"appid":"otn"}                              # 发送请求 获取json数据
+        data_json = global_opener.open(url,data=urllib.urlencode(data)).read()
         data = json.loads(data_json)                        # 解析json数据
         if data["result_code"] == 0:                        # 如果返回值为0
             self.newapptk = data["newapptk"]
@@ -120,8 +108,8 @@ class AutoLogin(object):
         """获取用户名 最后一步验证"""
         url = "https://kyfw.12306.cn/otn/uamauthclient"
         data = {"tk":self.newapptk}                         # 上一步获取到的值
-        request = urllib2.Request(url,data=urllib.urlencode(data),headers=self.headers)
-        data_json = self.opener.open(request).read()        # 发送请求 获取json数据
+                                                            # 发送请求 获取json数据
+        data_json = global_opener.open(url,data=urllib.urlencode(data)).read()
         data = json.loads(data_json)                        # 解析json数据
         if data["result_code"] == 0:                        # 如果返回值为0
             print "用户名获取成功"                            # 校验成功
@@ -133,8 +121,7 @@ class AutoLogin(object):
 
     def get_html(self):
         url = "https://kyfw.12306.cn/otn/index/initMy12306"
-        request = urllib2.Request(url,headers=self.headers) # 构建自定义请求对象
-        response = self.opener.open(request).read()         # 获取html文本
+        response = global_opener.open(url).read()           # 获取html文本
         print response                                      # 打印html
 
     def main(self):

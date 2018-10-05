@@ -1,4 +1,4 @@
-
+登录模块
 1 验证码参数分析 顺序如图
 1==(30-40,40-50)   3==(107-115,40-50)　 5==(180-185,40-50) 　7==(248-260,40-50)
 2==(30-40,110-120) 4==(107-115,110-120) 6==(180-185,110-120) 8==(248-260,110-120)
@@ -58,6 +58,7 @@ https://kyfw.12306.cn/otn/uamauthclient
 7 获取页面      GET请求
 https://kyfw.12306.cn/otn/index/initMy12306				# 最后请求 拿到页面 含个人信息
 
+查询模块
 8 余票查询      GET请求
 https://kyfw.12306.cn/otn/leftTicket/queryA?
 参数  url参数 注: 参数先后顺序不能乱
@@ -75,15 +76,180 @@ https://kyfw.12306.cn/otn/leftTicket/queryA?
             "IZQ":"广州南"
               },
         "result":[                                      # 返回数据 列表类型
-            "OjP...%3D(长串校验码应该是预定用的)|预订|330000K5980Z(列车编号)|K599(列车代号)|
-            BTC(车站编号作用不清楚)|GZQ(车站编号作用不清楚)|BXP(出发站)|GZQ(到达站)|
-            05:14(出发时间)|11:12(到达时间)|29:58(历时分钟)|Y(暂不清楚)|IH3...%3D(查看停靠信息用的长码)|
-            20181003(到达日期)|3(不清楚)|C1(不清楚)|11(出发站在本车次中的编号)|34(到达站在本车次中的编号)|
+            "OjP...%3D(长串校验码预定用的)|预订|330000K5980Z(列车编号)|K599(列车代号)|
+            BTC(发车站)|GZQ(终点站)|BXP(出发站)|GZQ(目的站)|05:14(出发时间)|11:12(到达时间)|
+            29:58(历时分钟)|Y(是否可以预定)|IH3...%3D(查看停靠信息用的长码)|20181003(到达日期)|
+            3(不清楚好像查看停靠用的)|C1(预定时用的)|11(出发站在本车次中的编号)|34(到达站在本车次中的编号)|
             0(0次日到达1当日到达)|0(不清楚)||(高级软卧)|(其他项)|无(软卧)|||有(无座)||无(硬卧)|无(硬座)|
-            (二等座)|(一等座)|(特等座)||10401030(不清楚)|1413(不清楚)|0(是否可兑换)",
+            (二等座)|(一等座)|(特等座)||10401030(座位类型)|1413(座位类型)|0(是否可兑换)",
                  ]
             },
-    "httpstatus":200,
+    "httpstatus":200,                                   # 响应码
     "messages":"",
-    "status":true
+    "status":true                                       # 服务器状态
     }
+
+预定模块
+9 判断登录      POST请求
+https://kyfw.12306.cn/otn/login/checkUser
+参数 _json_att=
+返回值
+    {"validateMessagesShowId":"_validatorMessage",
+    "status":true,                                      # 服务器状态
+    "httpstatus":200,                                   # 响应码
+    "data":{"flag":true},                               # flag返回是否登录状态
+    "messages":[],
+    "validateMessages":{}
+    }
+
+10 预提交请求    POST请求
+https://kyfw.12306.cn/otn/leftTicket/submitOrderRequest
+参数
+    secretStr=VgO...%3D                                 # 车票查询结果中第一个超长字符串
+    train_date=2018-10-18                               # 预定时间
+    back_train_date=2018-10-04                          # 当前日期
+    tour_flag=dc                                        # 固定值
+    purpose_codes=ADULT                                 # 固定值
+    query_from_station_name=北京                         # 搜索时出发站
+    query_to_station_name=天津                           # 搜索时到达站
+    undefined                                           # 默认
+返回值                                                 　# 没什么有意义的参数
+    {"validateMessagesShowId":"_validatorMessage",      # 猜测是服务器获取列车信息
+    "status":true,                                      # 服务器状态
+    "httpstatus":200,                                   # 响应码
+    "data":"N",                                         # 好像是提交时的那个码
+    "messages":[],
+    "validateMessages":{}
+    }
+
+11 获取全局token    POST请求
+https://kyfw.12306.cn/otn/confirmPassenger/initDc
+参数  _json_att=
+返回值 html页面      注:token 和 key 隐藏在html页面中 re匹配
+      var globalRepeatSubmitToken = 服务器值;
+      'key_check_isChange': '服务器值',
+
+12 获取常用联系人信息 POST请求
+https://kyfw.12306.cn/otn/confirmPassenger/getPassengerDTOs
+参数
+    _json_att=
+    REPEAT_SUBMIT_TOKEN=上一步获取的token值
+返回值
+    {"validateMessagesShowId":"_validatorMessage",
+    "status":true,                                              # 服务器状态
+    "httpstatus":200,                                           # 响应码
+    "data":{"isExist":true,                                     # 是否存在
+            "exMsg":"",
+            "two_isOpenClick":["**","**","**","**"],            # 不清楚
+            "other_isOpenClick":["**","**","**","**","**"],     # 不清楚
+            "normal_passengers":[{                              # 常用旅客表
+                                "code":"**",                    # 编号
+                                "passenger_name":"***",         # 姓名
+                                "sex_code":"男M女F",             # 性别代码
+                                "sex_name":"*",                 # 性别
+                                "born_date":"*-*-* *:*:*",      # 生日
+                                "country_code":"CN",            # 国籍
+                                "passenger_id_type_code":"1",   # 证件类型编号
+                                "passenger_id_type_name":"中国居民身份证", # 证件类型
+                                "passenger_id_no":"*******",    # 证件号
+                                "passenger_type":"成人1儿童2学生3",# 旅客类型编号
+                                "passenger_flag":"0",     固定0  # 乘客标示
+                                "passenger_type_name":"成人",    # 旅客类型
+                                "mobile_no":"*****",            # 手机号
+                                "phone_no":"",
+                                "email":"*****.com",            # 邮箱
+                                "address":"",                   # 地址
+                                "postalcode":"",                # 邮编
+                                "first_letter":"",              # 首字母
+                                "recordCount":"15",             # 记录数量
+                                "total_times":"**",             # 未知 两位数字
+                                "index_id":"0",                 # 未知
+                                "gat_born_date":"",
+                                "gat_valid_date_start":"",
+                                "gat_valid_date_end":"",
+                                "gat_version":""},],
+            "dj_passengers":[]
+            },
+    "messages":[],
+    "validateMessages":{}
+    }
+
+13 订票信息预提交      POST请求
+https://kyfw.12306.cn/otn/confirmPassenger/checkOrderInfo
+参数
+    cancel_flag=2								            # 取消标志
+    bed_level_order_num=000000000000000000000000000000	    # 应该是固定值
+    # 多个之间用下划线隔开 手机号如没有就留空但保持格式 　# 9特等座 M一等座 O二等座 F动卧 4软卧 3硬卧 1硬座无座
+    passengerTicketStr=坐席类型,0,旅客类型编号,姓名,证件类型编号,身份证号,手机号,N
+    oldPassengerStr=姓名,证件类型编号,身份证号,旅客类型编号_	    # 多个之间用下划线隔开
+    tour_flag=dc								            # 旅客标示 固定值
+    randCode=								                # 默认
+    whatsSelect=1						                    # 不清楚
+    _json_att=							                    # 默认
+    REPEAT_SUBMIT_TOKEN=服务器值 		                        # 全局token
+返回值
+    {"validateMessagesShowId":"_validatorMessage",
+    "status":true,			                                # 服务器状态
+    "httpstatus":200,		                                # 返回码
+    "data":{"ifShowPassCode":"N",                           # 是否显示验证码
+	        "canChooseBeds":"N",                            # 是否能够挑选卧铺
+	        "canChooseSeats":"Y",                           # 是否能够挑选座位
+	        "choose_Seats":"O",/ "OM9"                      # 可选坐席种类
+	        "isCanChooseMid":"N",                           # 是否可以选择中间
+	        "ifShowPassCodeTime":"1",                       # 如果显示验证码时间
+	        "submitStatus":true,                            # 提交状态
+	        "smokeStr":""},
+    "messages":[],
+    "validateMessages":{}}
+
+14 订单车次预提交      POST请求
+https://kyfw.12306.cn/otn/confirmPassenger/getQueueCount
+参数
+    train_date=Thu Oct 18 2018 00:00:00 GMT+0800 (中国标准时间)# 车票日期
+    # time.strftime("%a %b %d %Y %H:%M:%S GMT+0800 (中国标准时间)",time.strptime("2018-10-18","%Y-%m-%d"))
+    train_no=240000G38709		                            # 列车代号
+    stationTrainCode=G387		                            # 简称代号
+    seatType=O			                                    # 选择的座位类型
+    fromStationTelecode=VNP		                            # 出发站代号
+    toStationTelecode=TXP		                            # 目的站代号
+    leftTicket=jx0...%3D		                            # 查询结果中第二个长代码 第13个值
+    purpose_codes=00		                                # 目的编号
+    train_location=P3		                                # 查询结果的第16个值
+    _json_att=			                                    # 默认
+    REPEAT_SUBMIT_TOKEN=服务器值                             # 全局token
+返回值
+    {"validateMessagesShowId":"_validatorMessage",
+    "status":true,			                                # 服务器状态
+    "httpstatus":200,		                                # 响应码
+    "data":{"count":"0",                                    # 数量
+	"ticket":"77,0", 	                                    # 余票信息
+	"op_2":"false",
+	"countT":"0",
+	"op_1":"false"},
+    "messages":[],
+    "validateMessages":{}}
+
+15 订单提交     POST请求
+https://kyfw.12306.cn/otn/confirmPassenger/confirmSingleForQueue
+参数
+    passengerTicketStr=坐席类型,0,旅客类型代号,姓名,证件类型代号,证件号,手机号,N # 购票信息
+    oldPassengerStr=姓名,证件类型,证件号,旅客类型_              # 购票信息
+    randCode=                                               # 默认
+    purpose_codes=00                                        # 同上默认
+    key_check_isChange=服务器值                              # 检查钥匙是否改变
+    leftTicketStr=eQ9...%3D                                 # 查询结果中第二个长代码 第13个值
+    train_location=P4                                       # 查询结果中第16个值
+    choose_seats=                                           # 选择座位
+    seatDetailType=000                                      # 座位描述类型
+    whatsSelect=1                                           # 默认
+    roomType=00                                             # 不清楚
+    dwAll=N                                                 # 默认 不清楚
+    _json_att=                                              # 默认
+    REPEAT_SUBMIT_TOKEN=服务器值                             # 全局token
+返回值
+    {"validateMessagesShowId":"_validatorMessage",
+    "status":true,                                          # 服务器状态
+    "httpstatus":200,                                       # 响应码
+    "data":{"submitStatus":true},                           # 是否提交成功
+    "messages":[],
+    "validateMessages":{}}

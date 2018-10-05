@@ -62,8 +62,24 @@ class MySqldb(object):
         self._cursor.close()
 
 
+def _query_code(date,from_station,to_station):
+    """查询起始站和目的站代号 返回查询结果集"""
+    start = global_db.query("select name_code from station where name=%s", (from_station))
+    end = global_db.query("select name_code from station where name=%s", (to_station))
+    data = [                                                   # 格式化查询信息
+        {"leftTicketDTO.train_date": date},                    # 出发日期
+        {"leftTicketDTO.from_station": start[0]},              # 出发站代号
+        {"leftTicketDTO.to_station": end[0]},                  # 到达站代号
+        {"purpose_codes": "ADULT"}                             # 固定值
+    ]
+    global_db.close()
+    return data
+
+
 global_opener = Global_Opener()                                # 创建全局opener实例
 global_db = MySqldb()                                          # 创建全局mysql实例
+global_query_code = _query_code                                # 全局查询火车站代号
+
 
 if __name__ == "__main__":
     response = global_opener.open("http://ihome.newzn.cn/login.html").read()

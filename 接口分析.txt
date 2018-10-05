@@ -102,7 +102,7 @@ https://kyfw.12306.cn/otn/login/checkUser
     "validateMessages":{}
     }
 
-10 预提交请求    POST请求
+10 跳转到预定页面    POST请求
 https://kyfw.12306.cn/otn/leftTicket/submitOrderRequest
 参数
     secretStr=VgO...%3D                                 # 车票查询结果中第一个超长字符串
@@ -239,7 +239,7 @@ https://kyfw.12306.cn/otn/confirmPassenger/confirmSingleForQueue
     key_check_isChange=服务器值                              # 检查钥匙是否改变
     leftTicketStr=eQ9...%3D                                 # 查询结果中第二个长代码 第13个值
     train_location=P4                                       # 查询结果中第16个值
-    choose_seats=                                           # 选择座位
+    choose_seats=1/2 A/B/C /D/F                             # 选择座位1A2B1C 只有两排
     seatDetailType=000                                      # 座位描述类型
     whatsSelect=1                                           # 默认
     roomType=00                                             # 不清楚
@@ -253,3 +253,28 @@ https://kyfw.12306.cn/otn/confirmPassenger/confirmSingleForQueue
     "data":{"submitStatus":true},                           # 是否提交成功
     "messages":[],
     "validateMessages":{}}
+
+16 查询预定情况   GET请求
+https://kyfw.12306.cn/otn/confirmPassenger/queryOrderWaitTime?
+参数
+    random=1538738198817                                    # time.time()
+    tourFlag=dc                                             # 固定
+    _json_att=                                              # 固定
+    REPEAT_SUBMIT_TOKEN=用全局token查询                       # 全局token
+返回值
+    {"validateMessagesShowId":"_validatorMessage",
+    "status":true,                                          # 服务器状态码
+    "httpstatus":200,                                       # 响应码
+    "data":{
+        "queryOrderWaitTimeStatus":true,                    # 订单等待状态
+        "count":0,
+        "waitTime":4,                                       # 等待时间 已处理会小于0
+        "requestId":*****,                                  # 请求id
+        "waitCount":1,                                      # 等待数量
+        "tourFlag":"dc",
+        "orderId":null                                      # 订单id
+        "msg":"由于您取消次数过多今日将不能继续受理您的订票请求"    # 错误消息
+        },
+    "messages":[],
+    "validateMessages":{}
+    }

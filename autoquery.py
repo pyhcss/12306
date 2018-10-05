@@ -48,8 +48,7 @@ class AutoQuery(object):
         url = "https://kyfw.12306.cn/otn/leftTicket/queryA?"# 构造url
         data_list = [urllib.urlencode(i) for i in self.data]
         url += "&".join(data_list)                          # 拼接url
-        request = global_opener.request(url)                # 构造request对象
-        response = global_opener.opener(request).read()     # 发送请求 获取返回值
+        response = global_opener.open(url).read()           # 发送请求 获取返回值
         try:
             data = json.loads(response)                     # 解析json对象
         except Exception as e:

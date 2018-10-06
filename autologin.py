@@ -3,16 +3,11 @@
 import json
 import urllib
 import random
-from global_data import *
 from global_func import global_opener
 
 
 class AutoLogin(object):
     """12306自动登录模块"""
-
-    def __init__(self):
-        """初始化方法"""
-        self.newapptk = None
 
     def get_captcha(self):
         """获取验证码图片保存到本地"""
@@ -23,7 +18,10 @@ class AutoLogin(object):
             f.write(image_data)
 
     def get_captcha_text(self):
-        """人工输入验证码"""
+        """
+        人工输入验证码
+        return: "125,45,27,18" 验证码值
+        """
         print "-----------图片编号-----------"
         print "-----1-----3-----5-----7-----"
         print "-----2-----4-----6-----8-----"
@@ -57,7 +55,11 @@ class AutoLogin(object):
         return ",".join(text_list)                          # 拼接列表组成验证码文本
 
     def login_captcha(self,text):
-        """校验验证码"""
+        """
+        校验验证码
+        text: "125,45,27,18" 验证码值
+        return "0" or "captcha error"
+        """
         url = "https://kyfw.12306.cn/passport/captcha/captcha-check"
         data = {                                            # 创建数据内容
             "answer":text,                                  # 验证码值
@@ -73,12 +75,17 @@ class AutoLogin(object):
             print "验证码校验失败"
             return "captcha error"
 
-    def get_uamtk(self):
-        """发送账号密码请求"""
+    def get_uamtk(self,user,pwd):
+        """
+        发送账号密码请求
+        user: "" "账号"
+        pwd： "" "密码"
+        return: "0" or "user pwd error"
+        """
         url = "https://kyfw.12306.cn/passport/web/login"
         data = {                                            # 创建数据内容
-            "username":GLOBAL_USERNAME,                     # 账户名
-            "password":GLOBAL_PASSWORD,                     # 密码
+            "username":user,                                # 账户名
+            "password":pwd,                                 # 密码
             "appid": "otn"                                  # 固定值
         }                                                   # 发送请求 获取json数据
         data_json = global_opener.open(url,data=urllib.urlencode(data)).read()
@@ -91,23 +98,29 @@ class AutoLogin(object):
             return "user pwd error"
 
     def get_newapptk(self):
-        """获取newapptk"""
+        """
+        获取newapptk
+        return: "jskfdhiasefjeakwnflsa"  newapptk的值 or "user pwd error"
+        """
         url = "https://kyfw.12306.cn/passport/web/auth/uamtk"
         data = {"appid":"otn"}                              # 发送请求 获取json数据
         data_json = global_opener.open(url,data=urllib.urlencode(data)).read()
         data = json.loads(data_json)                        # 解析json数据
         if data["result_code"] == 0:                        # 如果返回值为0
-            self.newapptk = data["newapptk"]
             print "newapptk获取成功"                         # 校验成功
-            return "0"
+            return data["newapptk"]
         else:                                               # 否则校验失败
             print "newapptk获取失败"
-            return "user pwd error"
+            return "null"
 
-    def get_username(self):
-        """获取用户名 最后一步验证"""
+    def get_username(self,newapptk):
+        """
+        获取用户名 最后一步验证
+        newapptk: "dsafsdgadfsda"  服务器生成值
+        return: "0" or "get user error"
+        """
         url = "https://kyfw.12306.cn/otn/uamauthclient"
-        data = {"tk":self.newapptk}                         # 上一步获取到的值
+        data = {"tk":newapptk}                              # 上一步获取到的值
                                                             # 发送请求 获取json数据
         data_json = global_opener.open(url,data=urllib.urlencode(data)).read()
         data = json.loads(data_json)                        # 解析json数据
@@ -117,35 +130,41 @@ class AutoLogin(object):
             return "0"
         else:                                               # 否则校验失败
             print "用户名获取失败"
-            return "user pwd error"
+            return "get user error"
 
     def get_html(self):
+        """获取html文本"""
         url = "https://kyfw.12306.cn/otn/index/initMy12306"
         response = global_opener.open(url).read()           # 获取html文本
-        print response                                      # 打印html
+        print "html文本获取成功"
+        # print response                                      # 打印html
 
-    def main(self):
-        """调度方法"""
+    def main(self,user,pwd):
+        """
+        调度方法
+        user:"" 账号
+        pwd :"" 密码
+        """
         self.get_captcha()                                  # 获取验证码图片
         text = self.get_captcha_text()                      # 获取验证码文本
         rest = self.login_captcha(text)                     # 发送请求校验验证码
         if rest != "0":                                     # 如果返回值不是0
             return "验证码模块失败"                           # 结束函数
-        rest = self.get_uamtk()                             # 发送账号密码请求
+        rest = self.get_uamtk(user,pwd)                     # 发送账号密码请求
         if rest != "0":                                     # 如果返回值不是0
             return "账号密码模块失败"                         # 结束函数
         rest = self.get_newapptk()                          # 获取newapptk
-        if rest != "0":                                     # 如果返回值不是0
+        if rest == "null":                                  # 如果返回值是null
             return "获取newapptk模块失败"                     # 结束函数
-        rest = self.get_username()                          # 获取用户名
+        rest = self.get_username(rest)                      # 获取用户名
         if rest != "0":                                     # 如果返回值不是0
             return "获取用户名模块失败"                       # 结束函数
-        self.get_html()
+        self.get_html()                                     # 最后获取登录成功的html
         return "0"
 
 
 if __name__ == "__main__":
     autologin = AutoLogin()
-    rest = autologin.main()
+    rest = autologin.main("","")
     if rest != "0":
         print rest

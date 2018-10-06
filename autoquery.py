@@ -4,7 +4,7 @@ import json
 import time
 import urllib
 import datetime
-from global_func import global_opener,global_query_code
+from global_func import global_opener,global_db
 
 import sys                                                  # 解决ascii问题
 reload(sys)
@@ -15,7 +15,10 @@ class AutoQuery(object):
     """自动查询车票情况"""
 
     def input_text(self):
-        """获取出发信息"""
+        """
+        从命令行获取出发信息
+        return {"date":"2018-10-10","start":"北京","end":"天津"}
+        """
         date = raw_input("请输入出发日期(例20181001):").replace(" ", "")
                                                             # 格式化出发日期
         date = time.strftime("%Y-%m-%d",time.strptime(date,"%Y%m%d"))
@@ -26,16 +29,53 @@ class AutoQuery(object):
         else:                                               # 提示输入出发站目的站
             start = raw_input("请输入出发站(例北京):").replace(" ", "").replace("站", "")
             end = raw_input("请输入目的站(例天津):").replace(" ", "").replace("站", "")
-            try:                                            # 从数据库获取标准码
-                return global_query_code(date,start,end)
-            except Exception as e:                          # 数据库查询错误重新执行函数
+            try:
+                data = {
+                    "date":date,                            # 出发时间字符串"2018-10-10"
+                    "start":start,                          # 出发站字符串"北京"
+                    "end":end,                              # 目的站字符串"天津"
+                }
+                return data                                 # 从数据库获取车站标准码
+            except Exception as e:
                 print "站点输入有误 请重新输入"
-                self.input_text()
+                self.input_text()                           # 数据库查询错误重新执行函数
+
+    def query_code(self,date,from_station,to_station):
+        """
+        从数据库查询起始站和目的站代号 格式化查询结果集
+        date:"2018-10-10"               出发时间 格式化数据
+        from_station:"北京"              出发站  进行sql查询并格式化数据
+        to_station:"天津"                目的站  进行sql查询并格式化发送数据
+        return:[{"leftTicketDTO.train_date":"2018-10-10"},
+                {"leftTicketDTO.from_station":"VPN"},
+                {"leftTicketDTO.to_station":"NPV"},
+                {"purpose_codes": "ADULT"}
+               ]
+        """
+        start = global_db.query("select name_code from station where name=%s", (from_station))
+        end = global_db.query("select name_code from station where name=%s", (to_station))
+        data = [                                            # 格式化查询信息
+            {"leftTicketDTO.train_date": date},             # 出发日期
+            {"leftTicketDTO.from_station": start[0]},       # 出发站代号
+            {"leftTicketDTO.to_station": end[0]},           # 到达站代号
+            {"purpose_codes": "ADULT"}                      # 固定值
+        ]
+        global_db.close()                                   # 关闭数据库链接
+        print "格式化数据完成"
+        return data
 
     def get_info(self,data):
-        """发送请求获取余票信息"""
+        """
+        发送请求获取所有余票信息
+        data: [ {"leftTicketDTO.train_date":"2018-10-10"},
+                {"leftTicketDTO.from_station":"VPN"},
+                {"leftTicketDTO.to_station":"NPV"},
+                {"purpose_codes": "ADULT"}
+              ]
+        return: {"result":["列车详情1","列车详情2"]}
+        """
         url = "https://kyfw.12306.cn/otn/leftTicket/queryA?"# 构造url
-        data_list = [urllib.urlencode(i) for i in data]
+        data_list = [urllib.urlencode(i) for i in data]     # 遍历数据组成参数列表
         url += "&".join(data_list)                          # 拼接url
         response = global_opener.open(url).read()           # 发送请求 获取返回值
         try:
@@ -47,14 +87,47 @@ class AutoQuery(object):
             self.get_info(data)
         else:                                               # 正常状态返回码
             if data_dict["httpstatus"] == 200 and data_dict["status"] == True:
-                return data_dict
+                print "查询数据完成"
+                return data_dict["data"]                    # 返回数据
             else:                                           # 出错后挂起10秒 重新执行
                 print "json解析出错 请稍后..."
                 time.sleep(10)
                 self.get_info(data)
 
+    def query_train(self,train_code,seattype,data):
+        """
+        查询某趟列车的所有信息
+        train_code:["k138",]:   列车简称不区分大小写
+        seattype:  "硬座"        坐席类型
+        data:    {"result":["列车详情1","列车详情2"]}
+        return:  ["列车参数1","列车参数2","列车参数3"...] 详情在 接口分析.txt
+        """
+        if seattype == "特等座":                             # 判断选择的坐席
+            seat = -5
+        elif seattype == "一等座":
+            seat = -6
+        elif seattype == "二等座":
+            seat = -7
+        elif seattype == "硬卧":
+            seat = -9
+        elif seattype == "硬座":
+            seat = -8
+        elif seattype == "无座":
+            seat = -11
+        for i in train_code:                                # 遍历需要预定的列车
+            for x in data["result"]:                        # 遍历所有列车信息
+                data_list = x.split("|")                    # 每趟列车格式化成列表
+                                                            # 查询符合条件的列车列表
+                if i.upper() == data_list[3] and data_list[seat] != "无" and data_list[seat] != "0" and data_list[seat] != "":
+                    print "列车查询完成"
+                    return data_list                        # 返回数据
+        return []
+
     def format_out(self,data):
-        """格式化输出列车详细信息"""
+        """
+        格式化输出所有列车详细信息
+        data:   {"result":["列车详情1","列车详情2"]}
+        """
         print "-----------------------------------------------------" \
               "-----------------------------------------------------" \
               "----------------------------------"
@@ -62,8 +135,8 @@ class AutoQuery(object):
               "当日到达---高级软卧---软卧---特等座---一等座---二等座---" \
               "硬卧---硬座---无座---编号"
         a = 1
-        for i in data["data"]["result"]:
-            i = i.split("|")
+        for i in data["result"]:                            # 遍历所有列车列表数据
+            i = i.split("|")                                # 拆分每趟列车的字符串
             print "-----------------------------------------------" \
                   "-----------------------------------------------" \
                   "----------------------------------------------"
@@ -77,9 +150,11 @@ class AutoQuery(object):
 
     def main(self):
         """调度函数"""
-        data = self.input_text()
-        data = self.get_info(data)
-        self.format_out(data)
+        data = self.input_text()                            # 从命令行获取出发信息
+        data = self.query_code(data["date"],data["start"],data["end"])# 从数据库查询并格式化查询参数
+        data = self.get_info(data)                          # 获取所有列车的信息
+        self.format_out(data)                               # 格式化输出所有列车信息
+        print self.query_train("c2017","二等座",data)        # 从所有列车信息查询某趟列车
 
 
 if __name__ == "__main__":

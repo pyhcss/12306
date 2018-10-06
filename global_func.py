@@ -3,12 +3,11 @@
 import pymysql
 import urllib2
 import cookielib
-
 from global_data import GLOBAL_DB
 
 
 class Global_Opener(object):
-    """全局opener对象"""
+    """全局opener对象 单例模式"""
     _instance = None                                            # 判断是否生成过对象
     _first_init = True                                          # 是否首次初始化
 
@@ -27,14 +26,19 @@ class Global_Opener(object):
             self._first_init = False
 
     def open(self,url,data=None,headers={}):
-        """自定义UA 发送请求拿到结果"""
+        """
+        自定义UA 创建request对象发送请求拿到结果
+        data:       urlencode类型      post请求数据 不传递则默认get请求
+        headers:    {}                需要自定义的请求报头信息
+        return:     response对象       服务器响应数据
+        """
         headers["User-Agent"] = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36 OPR/26.0.1656.60"
         request = urllib2.Request(url,headers=headers,data=data)
         return self._opener.open(request)
 
 
 class MySqldb(object):
-    """全局mysql对象"""
+    """全局mysql对象 单例模式"""
     _instance = None                                            # 判断是否生成过对象
     _first_init = True                                          # 是否首次初始化
 
@@ -52,7 +56,11 @@ class MySqldb(object):
             self._first_init = False
 
     def query(self,*args,**kwargs):
-        """查询单条数据 返回查询结果 返回元组"""
+        """
+        查询单条数据 返回查询结果
+        *args:           按照mysql中execute参数传递
+        return:          查询结果元组
+        """
         self._cursor.execute(*args,**kwargs)
         return self._cursor.fetchone()
 
@@ -62,23 +70,8 @@ class MySqldb(object):
         self._cursor.close()
 
 
-def _query_code(date,from_station,to_station):
-    """查询起始站和目的站代号 返回查询结果集"""
-    start = global_db.query("select name_code from station where name=%s", (from_station))
-    end = global_db.query("select name_code from station where name=%s", (to_station))
-    data = [                                                   # 格式化查询信息
-        {"leftTicketDTO.train_date": date},                    # 出发日期
-        {"leftTicketDTO.from_station": start[0]},              # 出发站代号
-        {"leftTicketDTO.to_station": end[0]},                  # 到达站代号
-        {"purpose_codes": "ADULT"}                             # 固定值
-    ]
-    global_db.close()
-    return data
-
-
 global_opener = Global_Opener()                                # 创建全局opener实例
 global_db = MySqldb()                                          # 创建全局mysql实例
-global_query_code = _query_code                                # 全局查询火车站代号
 
 
 if __name__ == "__main__":

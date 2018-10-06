@@ -126,8 +126,8 @@ https://kyfw.12306.cn/otn/leftTicket/submitOrderRequest
 https://kyfw.12306.cn/otn/confirmPassenger/initDc
 参数  _json_att=
 返回值 html页面      注:token 和 key 隐藏在html页面中 re匹配
-      var globalRepeatSubmitToken = 服务器值;
-      'key_check_isChange': '服务器值',
+      var globalRepeatSubmitToken = '服务器值';
+      'key_check_isChange':'服务器值',
 
 12 获取常用联系人信息 POST请求
 https://kyfw.12306.cn/otn/confirmPassenger/getPassengerDTOs
@@ -196,7 +196,7 @@ https://kyfw.12306.cn/otn/confirmPassenger/checkOrderInfo
 	        "canChooseSeats":"Y",                           # 是否能够挑选座位
 	        "choose_Seats":"O",/ "OM9"                      # 可选坐席种类
 	        "isCanChooseMid":"N",                           # 是否可以选择中间
-	        "ifShowPassCodeTime":"1",                       # 如果显示验证码时间
+	        "ifShowPassCodeTime":"1",                       # 显示订票时间
 	        "submitStatus":true,                            # 提交状态
 	        "smokeStr":""},
     "messages":[],
@@ -254,7 +254,7 @@ https://kyfw.12306.cn/otn/confirmPassenger/confirmSingleForQueue
     "messages":[],
     "validateMessages":{}}
 
-16 查询预定情况   GET请求
+16  查询预定情况  GET请求
 https://kyfw.12306.cn/otn/confirmPassenger/queryOrderWaitTime?
 参数
     random=1538738198817                                    # time.time()

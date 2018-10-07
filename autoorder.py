@@ -21,6 +21,7 @@ class AutoOrder(object):
         resp = global_opener.open(url,data).read()          # 发送请求 获取返回值
         data = json.loads(resp)                             # 解析数据
         if not data["data"]["flag"]:                        # 判断是否登陆成功
+            print resp
             print "预定验证登录失败"
             return "check login error"
         else:
@@ -58,8 +59,12 @@ class AutoOrder(object):
         data = "_json_att="
         resp = global_opener.open(url,data=data).read()     # 发送请求 获取响应
         data = {}                                           # 获取token及key
-        data["token"] = re.search(r"globalRepeatSubmitToken = '(\w+)';",resp).group(1)
-        data["key"] = re.search(r"'key_check_isChange':'(\w+)'",resp).group(1)
+        try:
+            data["key"] = re.search(r"'key_check_isChange':'(\w+)'",resp).group(1)
+            data["token"] = re.search(r"globalRepeatSubmitToken = '(\w+)';",resp).group(1)
+        except Exception as e:
+            print "key获取失败"
+            return ""
         print "已获取到全局token及key"
         return data
 
@@ -76,6 +81,8 @@ class AutoOrder(object):
         data = resp["data"]["normal_passengers"]            # 拿到常用联系人列表
         person_list = []
         for x in person:                                    # 查找乘车人信息
+            if not data:
+                return [False]
             for i in data:                                  # 返回乘车人数据
                 if i["passenger_name"] == x:
                     person_list.append(i)
@@ -156,9 +163,18 @@ class AutoOrder(object):
         }                                                   # 发送请求拿到响应
         resp = global_opener.open(url,data=urllib.urlencode(data)).read()
         data = json.loads(resp)["data"]                     # 解析数据
-        if not data["op_1"]:                                # 判断提交情况
+        count = data["ticket"].split(",")
+        print resp
+        if count[0] == "0" or count[0] == "":               # 判断座位是否为空
+            print resp
+            return "count error"
+        elif not data["op_1"]:                              # 判断提交情况
             print resp
             return "train error"
+        if len(count) == 2:
+            if int(count[1]) > 0 and int(count[1]) < 10:    # 临时条件 避免分配到无座
+                print resp
+                return "count error"
         print "预定车次信息已提交"
         return "0"
 
@@ -192,7 +208,7 @@ class AutoOrder(object):
             "leftTicketStr":train[12],                      # 查询结果中第二个长代码 第13个值
             "train_location":train[15],                     # 查询结果中第16个值
             "choose_seats":seats,                           # 选择座位1A2B1C 只有两排
-            "seatDetailType":"000",                         # 座位描述类型
+            "seatDetailType":"",                            # 座位描述类型
             "whatsSelect":"1",                              # 默认
             "roomType":"00",                                # 不清楚
             "dwAll":"N",                                    # 默认 不清楚
@@ -212,16 +228,19 @@ class AutoOrder(object):
         token_key: {"token":服务器值,"key":服务器值}
         return: "0" 预定成功或者失败
         """
-        url = "https://kyfw.12306.cn/otn/confirmPassenger/queryOrderWaitTime?"
-        url += "random="+str(int(time.time()*1000))+"&tourFlag=dc&_json_att=&REPEAT_SUBMIT_TOKEN="+token_key["token"]
-        resp = global_opener.open(url).read()               # 发送请求获取响应
-        data = json.loads(resp)["data"]                     # 解析数据
-        if data["waitTime"] > 0:                            # 如果等待时间大于0则还在队列
-            time.sleep(5)
-            self.queue_submit(token_key)
-        else:
-            print resp
-            return "0"
+        while True:
+            url = "https://kyfw.12306.cn/otn/confirmPassenger/queryOrderWaitTime?"
+            url += "random="+str(int(time.time()*1000))+"&tourFlag=dc&_json_att=&REPEAT_SUBMIT_TOKEN="+token_key["token"]
+            resp = global_opener.open(url).read()         # 发送请求获取响应
+            data = json.loads(resp)["data"]               # 解析数据
+            if data["waitTime"] > 0:                      # 如果等待时间大于0则还在队列
+                time.sleep(5)
+            elif data["orderId"] == None:                 # 获取不到订单号
+                print data
+                return "orderid error"
+            else:
+                print data
+                return "0"
 
 
 if __name__ == "__main__":

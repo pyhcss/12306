@@ -74,27 +74,28 @@ class AutoQuery(object):
               ]
         return: {"result":["列车详情1","列车详情2"]}
         """
-        url = "https://kyfw.12306.cn/otn/leftTicket/queryA?"# 构造url
-        data_list = [urllib.urlencode(i) for i in data]     # 遍历数据组成参数列表
-        url += "&".join(data_list)                          # 拼接url
-        response = global_opener.open(url).read()           # 发送请求 获取返回值
-        try:
-            data_dict = json.loads(response)                # 解析json对象
-        except Exception as e:
-            print e                                         # 出错后返回的不是json对象
-            print "服务器响应出错 请稍后..."
-            time.sleep(10)                                  # 挂起10秒 重新执行
-            self.get_info(data)
-        else:                                               # 正常状态返回码
-            if data_dict["httpstatus"] == 200 and data_dict["status"] == True:
-                print "查询数据完成"
-                return data_dict["data"]                    # 返回数据
-            else:                                           # 出错后挂起10秒 重新执行
-                print "json解析出错 请稍后..."
-                time.sleep(10)
-                self.get_info(data)
+        while True:
+            url = "https://kyfw.12306.cn/otn/leftTicket/queryA?"# 构造url
+            data_list = [urllib.urlencode(i) for i in data]     # 遍历数据组成参数列表
+            url += "&".join(data_list)                          # 拼接url
+            try:
+                response = global_opener.open(url).read()       # 发送请求 获取返回值
+                data_dict = json.loads(response)                # 解析json对象
+            except Exception as e:
+                print e                                         # 出错后返回的不是json对象
+                print "服务器响应出错 请稍后..."
+                time.sleep(5)                                  # 挂起10秒 重新执行
+                continue
+            else:                                               # 正常状态返回码
+                if data_dict["httpstatus"] == 200 and data_dict["status"] == True:
+                    print "查询数据完成"
+                    return data_dict["data"]                    # 返回数据
+                else:                                           # 出错后挂起10秒 重新执行
+                    print "json解析出错 请稍后..."
+                    time.sleep(10)
+                    continue
 
-    def query_train(self,train_code,seattype,data):
+    def query_train(self,train_code,person,seattype,data):
         """
         查询某趟列车的所有信息
         train_code:["k138",]:   列车简称不区分大小写
@@ -119,8 +120,15 @@ class AutoQuery(object):
                 data_list = x.split("|")                    # 每趟列车格式化成列表
                                                             # 查询符合条件的列车列表
                 if i.upper() == data_list[3] and data_list[seat] != "无" and data_list[seat] != "0" and data_list[seat] != "":
-                    print "列车查询完成"
-                    return data_list                        # 返回数据
+                    if data_list[seat] == "有":             # 判断余票多的情况
+                        print "列车查询完成"
+                        return data_list                    # 返回数据
+                    try:
+                        if len(person) <= int(data_list[seat]):# 判断余票大于人数的情况
+                            print "列车查询完成"
+                            return data_list                # 返回数据
+                    except Exception as e:
+                        pass
         return []
 
     def format_out(self,data):
